@@ -12,4 +12,7 @@ public class Attribute {
     public int order;           //该属性是表中的第几个属性
     public int type; //1->int 2->float 3->char 属性类型
     public boolean isPrimaryKey;//是否主键
+    Attribute(){
+        this.name = new String();
+    }
 }

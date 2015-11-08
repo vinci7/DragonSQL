@@ -3,21 +3,23 @@ package dragonSQL;
 /**
  * Created by qi on 15/11/2.
  */
+
+
 public class BufferBlock {
-    public String fileName;
-    public int blockOffset;
+    public String fileName;         //文件名
+    public int blockOffset;         //偏移量
 
-    public byte[] values;//= new byte[4096];
-    public int recordNum;
+    public byte[] values;           //= new byte[4096];
+    public int recordNum;           //记录record数量
 
-    public	boolean dirtyBit;//=false;
-    public BufferBlock next;//=null ;	// the pointer point to next block
-    public BufferBlock previous;//=null;
+    public boolean dirtyBit;        //=false; false 为脏位
+    public BufferBlock next;        //=null 指向下一块block的指针
+    public BufferBlock previous;    //=null 指向上一块block的指针
 
 
-    public	boolean lock;//=false; prevent the block from replacing
+    public	boolean lock;           //=false prevent the block from replacing 锁定
 
-    public BufferBlock() {
+    public BufferBlock() {          //init 初始化数据
         fileName = null;
         values = new byte[4096];
         dirtyBit = false;
@@ -26,23 +28,21 @@ public class BufferBlock {
         lock = false;
     }
 
-    public  BufferBlock(String FileName,int Offset){
+    public  BufferBlock(String FileName,int Offset){ //带有文件名和偏移量的init初始化
         fileName = FileName;
         blockOffset = Offset;
         dirtyBit = true;
         next = null;
         values=new byte[4096];
         lock = false;
-        recordNum=0;
-
-
+        recordNum = 0;
     }
 
-    public void insert(String s,int pos){
+    public void insert(String s,int pos){           //插入数据
         byte[] b =s.getBytes(/*"ISO-8859-1"*/);
         for(int i = 0;i<b.length;i++)
             values[pos+i]=b[i];
-        dirtyBit = true;
+        dirtyBit = true;                            //设置脏位
     }
 
     public void insert(int sourceInt, int pos ,int length){
@@ -50,22 +50,19 @@ public class BufferBlock {
             values[i+pos]=(byte)(sourceInt>>8*(3-i)&0xFF);
         }
         dirtyBit = true;
-
-
     }
 
-    public void delete(int pos, int length){
+    public void delete(int pos, int length){        //删除数据
         for(int i = 0;i<4096-pos-length;i++){
             values[i+pos]=values[i+length+pos];
         }
-
         for(int i =0;i<length;i++){
             values[4095-i]=0;
         }
-        dirtyBit=true;
+        dirtyBit = true;
     }
 
-    public  byte[] getBytes(int startpos, int length){
+    public byte[] getBytes(int startpos,int length){ //获取
         byte[] b = new byte[length];
         for(int i =0;i<length;i++){
             b[i]=values[startpos+i];
@@ -73,12 +70,12 @@ public class BufferBlock {
         return b;
     }
 
-    public  void setBytes(int startpos, byte[] sourcebyte){
+    public  void setBytes(int startpos, byte[] sourcebyte){  //设置
         //byte[] b = new byte[length];
         for(int i =0;i<sourcebyte.length;i++){
             values[startpos+i]=sourcebyte[i];
         }
-        dirtyBit=true;
+        dirtyBit = true;
     }
 
     public  String getString(int startpos, int length){

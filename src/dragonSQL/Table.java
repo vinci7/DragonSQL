@@ -20,5 +20,10 @@ public class Table {
         blockNum = 1;
         recordLength = 0;
         maxRecordsPerBlock = 0;
+
+        this.attrlist = new Attribute[40];
+        for (int i = 0 ; i < 40 ; i ++ ){
+            this.attrlist[i] = new Attribute();
+        }
     }
 }

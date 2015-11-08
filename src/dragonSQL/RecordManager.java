@@ -1,14 +1,15 @@
 package dragonSQL;
+
+/**
+ * Created by qi on 15/11/7.
+ */
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
-
-/**
- * Created by qi on 15/11/2.
- */
 
 public class RecordManager {
 
@@ -19,7 +20,7 @@ public class RecordManager {
     RecordManager(){
 
     }
-
+    //因为.table文件中的数据是二进制格式，数据之间使用'&'进行分隔，需要取出数据后进行分离
     private static Record splitRecord(Table tableInfo,byte[] recordLine){
         Record returnRecord=new Record();
         byte[] tmpbyte;
@@ -62,17 +63,14 @@ public class RecordManager {
     //将记录字符串分解成属性字符串向量
     private static row bytesToString(Table tableInfo,Record recordLine) throws UnsupportedEncodingException{
         row returnRow=new row();
-
         String tmpString = null;
-
         for(int i=0;i<tableInfo.attrNum;i++){
-
             switch(tableInfo.attrlist[i].type){
                 case CHAR:
                     tmpString=new String(recordLine.columns.get(i));
                     break;
                 case INT:
-                    int intvalue = 0;
+                    int intvalue=0;
                     for(int j=0;j<4;j++){
                         intvalue  +=(recordLine.columns.get(i)[j] & 0xFF)<<(8*(3-j));
                     }
@@ -102,7 +100,6 @@ public class RecordManager {
     private static boolean Compare(Table tableInfo,Record InfoLine,Vector<Condition> conditions) throws UnsupportedEncodingException{
         for(int i=0;i<conditions.size();i++){ //对and集合成条件向量的每个条件进行对比
             int column=conditions.get(i).columnNum;  //这个条件是在哪个属性上进行的
-            //String value1= new String(InfoLine.columns.get(column),"ISO-8859-1"); //这条记录上该属性的值
             String value2=conditions.get(i).value;  //这个条件的比较内容
             switch(tableInfo.attrlist[column].type){ //比较类型
                 case CHAR:
@@ -129,18 +126,12 @@ public class RecordManager {
                     }
                     int intvalue2=Integer.valueOf(value2).intValue();
                     switch(conditions.get(i).op){
-                        case Ls:
-                            if(intvalue1>=intvalue2) return false;	break;
-                        case Le:
-                            if(intvalue1>intvalue2) return false;	break;
-                        case Gt:
-                            if(intvalue1<=intvalue2) return false;	break;
-                        case Ge:
-                            if(intvalue1<intvalue2) return false;	break;
-                        case Eq:
-                            if(intvalue1!=intvalue2) return false;	break;
-                        case Ne:
-                            if(intvalue1==intvalue2) return false;	break;
+                        case Ls:if(intvalue1>=intvalue2) return false;	break;
+                        case Le:if(intvalue1>intvalue2) return false;	break;
+                        case Gt:if(intvalue1<=intvalue2) return false;	break;
+                        case Ge:if(intvalue1<intvalue2) return false;	break;
+                        case Eq:if(intvalue1!=intvalue2) return false;	break;
+                        case Ne:if(intvalue1==intvalue2) return false;	break;
                     }
                     break;
                 case FLOAT:
@@ -156,18 +147,12 @@ public class RecordManager {
                     flvalue1= Float.intBitsToFloat(l);
                     float flvalue2=Float.valueOf(value2).floatValue();
                     switch(conditions.get(i).op){
-                        case Ls:
-                            if(flvalue1>=flvalue2) return false;	break;
-                        case Le:
-                            if(flvalue1>flvalue2) return false;		break;
-                        case Gt:
-                            if(flvalue1<=flvalue2) return false;	break;
-                        case Ge:
-                            if(flvalue1<flvalue2) return false;		break;
-                        case Eq:
-                            if(flvalue1!=flvalue2) return false;	break;
-                        case Ne:
-                            if(flvalue1==flvalue2) return false;	break;
+                        case Ls:if(flvalue1>=flvalue2) return false;break;
+                        case Le:if(flvalue1>flvalue2) return false;	break;
+                        case Gt:if(flvalue1<=flvalue2) return false;break;
+                        case Ge:if(flvalue1<flvalue2) return false;	break;
+                        case Eq:if(flvalue1!=flvalue2) return false;break;
+                        case Ne:if(flvalue1==flvalue2) return false;break;
                     }
                     break;
             }
@@ -177,11 +162,9 @@ public class RecordManager {
 
     //创建表
     static public void createTable(Table tableInfo){
-        System.out.println("Here\'s RecordManager.createTable();");
         try{
             String filename=tableInfo.tableName+".table";
             PrintWriter out = new PrintWriter( new BufferedWriter(new FileWriter(new File(filename))));
-
             out.close();
         }catch(Exception e){
             System.err.println(e.getMessage());
@@ -193,7 +176,6 @@ public class RecordManager {
 
     //删除表
     public static void dropTable(String tableName){
-        System.out.println("Here's RecordManager.dropTable();");
         String filename = tableName + ".table";
         File file = new File(filename);
 
@@ -205,7 +187,7 @@ public class RecordManager {
                     System.out.println("文件"+filename+"没有找到");
 
             //与该表相关的索引文件全部删除
-            Vector<String> allIndex=CatalogManager.relativaIndex(tableName);
+            Vector<String> allIndex=CatalogManager.relativeIndex(tableName);
             for(int i=0;i<allIndex.size();i++){
                 String indexname = allIndex.elementAt(i) + ".index";
                 File indexfile = new File(indexname);
@@ -217,23 +199,20 @@ public class RecordManager {
             System.err.println(e.getMessage());
             System.err.println("删除表失败！");
         }
-
-        //System.out.println("删除表成功！");
-        //BufferManager.setInvalid(filename);  //将buf中所有与此索引相关的缓冲块都置为无效
-        //API在catalog里销毁tableInfo还要销毁所有建立其上的index
     }
 
     //插入记录
     public static void insertValue(Table tableInfo,Record InfoLine) throws Exception{
-        //	String recordLine=connectRecord(tableInfo,InfoLine); //将Record连结成字符串
         String filename=tableInfo.tableName+".table";
 
         BufferBlock blk=BufferManager.getInsertPosition(tableInfo,filename); //找到可插入位置
-        if(blk==null){blk=BufferManager.createBlock(filename, tableInfo.blockNum);
-            CatalogManager.addTableBlockNum(tableInfo.tableName);}
+        if(blk==null){
+            blk=BufferManager.createBlock(filename, tableInfo.blockNum);
+            CatalogManager.addTableBlockNum(tableInfo.tableName);
+        }
 
         //String tmpColumn;
-        int pos=blk.recordNum*tableInfo.recordLength;
+        int pos = blk.recordNum * tableInfo.recordLength;
         for(int i=0;i<InfoLine.columns.size();i++){
             //长度不足时用&补齐，所以搜索时也要注意长度不足时用&补齐（对API的要求）
             blk.setBytes(pos,InfoLine.columns.get(i));
@@ -241,9 +220,11 @@ public class RecordManager {
         }
 
         //添加入所有相关的索引
-        Vector<String> allIndex=CatalogManager.relativaIndex(tableInfo.tableName);
+        Vector<String> allIndex=CatalogManager.relativeIndex(tableInfo.tableName);
         for(int i=0;i<allIndex.size();i++){
             Index inx2 = CatalogManager.getIndex(allIndex.elementAt(i));
+            Vector <byte[]> x = InfoLine.columns;
+
             IndexManager.insertKey(inx2,InfoLine.columns.get(inx2.column), blk.blockOffset, blk.recordNum);
         }
 
@@ -262,31 +243,12 @@ public class RecordManager {
                 int position = offset*tableInfo.recordLength;
                 byte[] RecordLine =block.getBytes(position, tableInfo.recordLength);
                 Record red=splitRecord(tableInfo,RecordLine); //进行拆分
+
                 row Row=bytesToString(tableInfo,red);
                 datas.Lines.add(Row);		//添加到展示数据中
             }
         }
         //展示查询结果
-        showDatas(datas);
-    }
-
-    //无条件查找部分属性输出
-    static public void select(Table tableInfo,selectAttribute selections) throws UnsupportedEncodingException{
-        String filename=tableInfo.tableName+".table";
-        Data datas=new Data();
-
-        for(int blockOffset=0; blockOffset< tableInfo.blockNum; blockOffset++){
-            BufferBlock block = BufferManager.readBlock(filename,blockOffset);
-            for(int offset =0; offset < block.recordNum; offset++){
-                int position = offset*tableInfo.recordLength;
-                byte[] RecordLine =block.getBytes(position, tableInfo.recordLength);
-                Record red=splitRecord(tableInfo,RecordLine);
-                Record rred=red.selectRecord(tableInfo,selections);  //提取出要展示的属性列
-                row Row=bytesToString(tableInfo,rred);
-                datas.Lines.add(Row);
-            }
-        }
-
         showDatas(datas);
     }
 
@@ -311,28 +273,6 @@ public class RecordManager {
         showDatas(datas);
     }
 
-    //条件查找部分属性输出
-    public static void select(Table tableInfo,selectAttribute selections,Vector<Condition> conditions) throws UnsupportedEncodingException{
-        String filename=tableInfo.tableName+".table";
-        Data datas=new Data();
-
-        for(int blockOffset=0; blockOffset< tableInfo.blockNum; blockOffset++){
-            BufferBlock block = BufferManager.readBlock(filename,blockOffset);
-            for(int offset =0; offset < block.recordNum; offset++){
-                int position = offset*tableInfo.recordLength;
-                byte[] RecordLine =block.getBytes(position, tableInfo.recordLength);
-                Record red=splitRecord(tableInfo,RecordLine);
-                if(Compare(tableInfo,red,conditions)){  //满足比较条件的才添加到展示数据中
-                    Record rred=red.selectRecord(tableInfo, selections); //提取出要展示的属性列
-                    row Row=bytesToString(tableInfo,rred);
-                    datas.Lines.add(Row);
-                }
-            }
-        }
-
-        showDatas(datas);
-    }
-
     //无条件删除
     public static void delete(Table tableInfo) {
         String filename = tableInfo.tableName + ".table";
@@ -345,7 +285,7 @@ public class RecordManager {
             fw.close();
 
             //清空与表相关的索引的内容
-            Vector<String> allIndex=CatalogManager.relativaIndex(tableInfo.tableName);
+            Vector<String> allIndex=CatalogManager.relativeIndex(tableInfo.tableName);
             for(int i=0;i<allIndex.size();i++){
                 Index inx2 = CatalogManager.getIndex(allIndex.elementAt(i));
 
@@ -372,7 +312,7 @@ public class RecordManager {
         int count=0;
 
         //找出与该表相关的所有索引
-        Vector<String> allIndex=CatalogManager.relativaIndex(tableInfo.tableName);
+        Vector<String> allIndex=CatalogManager.relativeIndex(tableInfo.tableName);
 
         for(int blockOffset=0; blockOffset< tableInfo.blockNum; blockOffset++){
             BufferBlock block = BufferManager.readBlock(filename,blockOffset);

@@ -12,4 +12,11 @@ public class Query{
     public String fileName;     //文件名
     public int attrNum;         //属性数量
     public Attribute[] attrList;//属性数组
+
+    Query() {
+        this.attrList = new Attribute[40];
+        for (int i = 0 ; i < 40 ; i ++ ){
+            this.attrList[i] = new Attribute();
+        }
+    }
 }

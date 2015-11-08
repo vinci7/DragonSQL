@@ -1,6 +1,6 @@
 package dragonSQL;
 
-import java.io.BufferedReader;
+import javax.sound.midi.SysexMessage;
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
 
@@ -8,13 +8,13 @@ import java.util.Vector;
 /**
  * Created by qi on 15/11/1.
  */
+
 public class API {
 
     public static String SQL;
     public static final int INT =1;
     public static final int FLOAT =2;
     public static final int CHAR =3;
-
     public static void main(){
         System.out.println("Here's API.main();");
     }
@@ -47,11 +47,11 @@ public class API {
                     index.indexName = table.tableName+"-primary-index";
                     index.tableName = table.tableName;
                     index.column = i;
-                    index.columnLength = table.attrNum;
+                    index.columnLength = table.attrlist[i].length;
                     index.rootNum = 0;
                     index.blockNum = 0;
-                    dragonSQL.CatalogManager.createIndex(index);            //待实现
-                    IndexManager.createIndex(table, index);                 //待实现
+                    dragonSQL.CatalogManager.createIndex(index);
+                    IndexManager.createIndex(table, index);
                     break;
                 }
             }
@@ -60,9 +60,9 @@ public class API {
 
     public static void dropTable(Query query){
         String tableName = query.tableName;
-        RecordManager.dropTable(tableName);                             //待实现
-        dragonSQL.CatalogManager.dropTable(tableName);                  //待实现
-        BufferManager.dropTable(tableName+".table");                    //待实现
+        RecordManager.dropTable(tableName);
+        dragonSQL.CatalogManager.dropTable(tableName);
+        BufferManager.dropTable(tableName+".table");
     }
 
     public static void createIndex(Query query){
@@ -86,20 +86,86 @@ public class API {
     public static void dropIndex(Query query) {
         IndexManager.dropIndex(query.indexName);                        //待实现
         CatalogManager.dropIndex(query.indexName);                      //待实现
-        BufferManager.dropIndex(query.indexName + ".index");            //待实现
+        BufferManager.dropTable(query.indexName + ".index");            //待实现
     }
 
     public static void select(Query query){
         int flag = 0;
-        int isCondition = 0;
-        String tableName = 
+        int isCondition = query.attrNum;
+        String tableName = query.tableName;
+        Table table = CatalogManager.getTable(tableName);
+        Vector<Condition> cds = new Vector<>();
+
+        Index index = new Index();
+        offsetInfo offset = new offsetInfo();
+
+        long start;
+
+        //处理select条件数组
+        for (int i = 0; i < query.attrNum; i++) {
+            Condition cd = new Condition();
+            cd.op = query.attrList[i].signal;
+            cd.value = query.attrList[i].value;
+            cd.columnNum = query.attrList[i].order;
+
+            for(int j = 0;j < table.attrNum; j++){
+                if(query.attrList[i].name.equals(table.attrlist[j].name)){
+                    cd.columnNum = j;
+                    break;
+                }
+            }
+
+            if (cd.op == Comparison.Eq){
+                index = CatalogManager.getIndexfromTable(tableName,query.attrList[i].name);
+                if ((index != null) && (query.attrNum == 1)){
+                    try{
+                        byte[] tmpbytes = stringToBytes(table.attrlist[cd.columnNum],cd.value);
+                        offset = IndexManager.searchEqual(index,tmpbytes);
+                        flag = 1; //有索引
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                } else {
+                    cds.add(cd);
+                }
+            } else {
+                cds.add(cd);
+            }
+        }
+
+        //处理选择的列
+        //暂时只处理全属性查找
+        if (flag == 1){
+            start= System.currentTimeMillis();
+            try{
+                RecordManager.selectFromIndex(table,offset);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+            System.out.println("time cost with index: " + (System.currentTimeMillis() - start));
+        } else if (isCondition >= 1){
+            start= System.currentTimeMillis();
+            try{
+                RecordManager.select(table, cds);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+            System.out.println("time cost without index: " + (System.currentTimeMillis() - start));
+        } else {
+            start= System.currentTimeMillis();
+            try{
+                RecordManager.select(table);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+            System.out.println("time cost without index: " + (System.currentTimeMillis() - start));
+        }
     }
 
     public static void insert(Query query){
         String tableName = query.tableName;
-        Table table = new Table();
         Record record = new Record();
-        table = CatalogManager.getTable(tableName);
+        Table table = CatalogManager.getTable(tableName);
         Vector<Condition> cds = new Vector<Condition>();
         boolean isExist = false;
         for (int i = 0; i < query.attrNum; i++) {
@@ -108,11 +174,10 @@ public class API {
                 cd.op = Comparison.Eq;
                 cd.value = query.attrList[i].value;
                 cd.columnNum = i;
-
                 cds.add(cd);
                 try{
                     if (RecordManager.exist(table,cds)) {
-                        System.out.println(table.attrlist[i].name+"="+query.attrList[i].value+" is existed!");
+                        System.out.println("记录"+table.attrlist[i].name+"="+query.attrList[i].value+" 已经存在!");
                         isExist = true;
                         break;
                     }
@@ -134,20 +199,30 @@ public class API {
             catch (Exception e){
                 e.printStackTrace();
             }
-
         }
     }
 
     public static void delete(Query query){
-        Table table = new Table();
         String tableName = query.tableName;
-        table = CatalogManager.getTable(tableName);
+        Table table = CatalogManager.getTable(tableName);
         Vector<Condition> cds = new Vector<>();
         for (int i = 0; i < query.attrNum; i++) {
             Condition cd = new Condition();
             cd.op = query.attrList[i].signal;
             cd.value = query.attrList[i].value;
+
             cd.columnNum = query.attrList[i].order;
+
+            /*
+            String name = query.attrList[i].name;
+
+            for(int j = 0;j < table.attrNum; j++){
+                if(name.equals(table.attrlist[j].name)){
+                    cd.columnNum = j;
+                }
+            }
+            */
+
             cds.add(cd);
         }
         if (query.attrNum == 0){
@@ -163,18 +238,14 @@ public class API {
     }
 
     public static void quit(Query query){
+        BufferManager.writeBufferToFile();
         System.out.println("Quit.");
         System.exit(0);
-    }
-
-    public static void execfile(Query query){
-
     }
 
     static public byte[] stringToBytes(Attribute attr,String tmpString) throws UnsupportedEncodingException{
 
         byte[] tmpbyte=new byte[attr.length];
-
         switch(attr.type){
             case CHAR:
                 byte[] tmpb=tmpString.getBytes("ISO-8859-1");
@@ -183,7 +254,6 @@ public class API {
                     tmpbyte[i]=tmpb[i];
                 }
                 for(;i<attr.length;tmpbyte[i++]='&');
-
                 break;
             case INT:
                 tmpbyte=new byte[4];
@@ -201,6 +271,7 @@ public class API {
                     l = l >> 8;
                 }
                 break;
+
         }
         return tmpbyte;
     }

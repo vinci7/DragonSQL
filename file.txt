@@ -1,0 +1,49 @@
+create table student2(id int,name char(12) unique,score float,primary key(id) );
+
+execfile instruction.txt;
+
+select * from student2 where id=1080100345; 
+
+select * from student2 where name='name345';
+
+select * from student2 where id<>1080100999;
+
+select * from student2 where name<>'name999'; 
+
+select * from student2 where score>90 and id<=1080100100;
+
+create index stuidx on student2 ( name );
+
+select * from student2 where name='name345';
+
+insert into student2 values(1080197998,'name97998',100);
+
+select * from student2 where name='name97998';
+
+delete from student2 where name='name97998';
+
+select * from student2 where name='name97998';
+
+drop index stuidx;
+
+select * from student2 where name='name345';
+
+delete from student2 where id=1080100345;
+
+select * from student2 where id=1080100345;
+
+insert into student2 values(1080100345,'name97998',100);
+
+select * from student2 where score=99.5;
+
+delete from student2 where score=99.5;
+
+select * from student2 where score=99.5;
+
+delete from student2;
+
+select * from student2;
+
+drop table student2;
+
+select * from student2;

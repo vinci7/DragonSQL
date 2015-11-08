@@ -1,0 +1,7 @@
+insert into teacher values('103','name',12,'A');
+insert into teacher values('104','name',12,'A');
+insert into teacher values('105','name',12,'A');
+insert into teacher values('106','name',12,'A');
+insert into teacher values('107','name',12,'A');
+insert into teacher values('108','name',12,'A');
+insert into teacher values('109','name',12,'A');

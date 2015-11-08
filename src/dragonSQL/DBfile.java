@@ -6,16 +6,13 @@ import java.io.*;
  */
 
 public class DBfile {
+    //把block中的数据写入文件
     static public void BlocktoFile(String filename,byte[] content, int offset, int recordNum )throws Exception {
 
         FileWriter fileWriter5=new FileWriter("temp1.file");
-        fileWriter5.write("");
-        fileWriter5.flush();
-        fileWriter5.close();
+        fileWriter5.write("");fileWriter5.flush();fileWriter5.close();
         FileWriter fileWriter6=new FileWriter("temp2.file");
-        fileWriter6.write("");
-        fileWriter6.flush();
-        fileWriter6.close();
+        fileWriter6.write("");fileWriter6.flush();fileWriter6.close();
 
         File f=new File("temp1.file");
         FileOutputStream fileWriter1= new FileOutputStream(f,true);
@@ -154,7 +151,6 @@ public class DBfile {
                 jd=reader3.read(a);
             }
             reader3.close();
-            //////////////////////////////
 
             File file4 = new File("temp2.file");
             FileInputStream reader4 = null;
@@ -172,10 +168,11 @@ public class DBfile {
             fileWriter3.flush();
             fileWriter3.close();
         }
-
         return ;
     }
-    static public BufferBlock FiletoBlock(String filename,int offset)throws Exception {
+
+    //把文件中的数据读入block
+    static public BufferBlock FiletoBlock(String filename,int offset) throws Exception {
 
         BufferBlock b = new BufferBlock();
         File file = new File(filename);
@@ -192,7 +189,6 @@ public class DBfile {
 
         if(ofst==-1){
             b.recordNum=0;
-            //b.values=null;
             reader.close();
             return b;
         }
